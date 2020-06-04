@@ -161,7 +161,8 @@ void BundledCompression(const unsigned char* input_data, size_t input_size,
                                                             BrotliCompress, repetitions);
       float rate = input_size / comp_results.compressed_size;
       float speed = (float) (input_size * repetitions) / (comp_results.compression_time * 1024 * 1024);
-      results << "\"" << name << level << "_compression\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << comp_results.compressed_size << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed << ",\n";
     }
 
@@ -172,7 +173,8 @@ void BundledCompression(const unsigned char* input_data, size_t input_size,
                                                             ZlibCompress, repetitions);
       float rate = input_size / comp_results.compressed_size;
       float speed = (float) (input_size * repetitions) / (comp_results.compression_time * 1024 * 1024);
-      results << "\"" << name << level << "_compression\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << comp_results.compressed_size << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed;
       if (level < 9) {
           results << ",\n";
@@ -229,7 +231,8 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
     for (int level = 1 ; level <= 11 ; level ++) {
       float rate = input_size / compressed_sizes[level - 1];
       float speed = (float) (input_size * repetitions) / (compression_times[level - 1] * 1024 * 1024);
-      results << "\"" << name << level << "_compression\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << compressed_sizes[level - 1] << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed << ",\n";
     }
 
@@ -237,7 +240,8 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
     for (int level = 1 ; level <= 9 ; level ++) {
       float rate = input_size / compressed_sizes[11 + level - 1];
       float speed = (float) (input_size * repetitions) / (compression_times[11 + level - 1] * 1024 * 1024);
-      results << "\"" << name << level << "_compression\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
+      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << compressed_sizes[11 + level - 1] << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed;
       if (level < 9) {
           results << ",\n";
