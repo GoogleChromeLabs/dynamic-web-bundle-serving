@@ -23,7 +23,9 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <stdlib.h>
 #include "json.hpp"
+
 
 using json = nlohmann::json;
 
@@ -68,11 +70,39 @@ void GetNamesFromFile(std::string file_name, std::vector<std::string>& names) {
     infile.close();
 }
 
+float GetSeconds(std::string time_string) {
+    size_t ind = time_string.find("\t");
+    auto time = time_string.substr(ind, time_string.size() - ind);
+    auto minutes_ind = time.find('m');
+    auto minutes = time.substr(0, minutes_ind);
+    auto seconds = time.substr(minutes_ind + 1, time.size() - minutes_ind - 2);
+    return std::stof(minutes) * 60 + std::stof(seconds);
+}
+
 size_t BrotliCompress(int level, int window, const unsigned char* input_data, size_t input_size, unsigned char* output_data, size_t output_buffer_size) {
   if (!BrotliEncoderCompress(level, window, BROTLI_MODE_GENERIC, input_size, input_data, &output_buffer_size, output_data)) {
     throw "Failure in BrotliCompress";
   }
   return output_buffer_size;
+}
+
+size_t GzipCompress(int level, int window, const unsigned char* input_data, size_t input_size, unsigned char* output_data, size_t output_buffer_size, int& time) {
+    std::ofstream out("example.txt");
+    out.write((const char*)input_data, input_size);
+    out.close();
+    
+    std::string command = "{ time gzip -" + std::to_string(level) + 
+        " -f -k -c example.txt > example_gzip.txt.gz; } 2> time.txt";
+    system(command.c_str());
+    
+    std::vector<std::string> times;
+    GetNamesFromFile("time.txt", times);
+    time = GetSeconds(times[2]) + GetSeconds(times[3]);
+    
+    std::ifstream infile("example_gzip.txt.gz");
+    infile.seekg(0,std::ios_base::end);
+    auto length = infile.tellg();
+    return static_cast<size_t>(length);
 }
 
 size_t ZlibCompress(int level, int window, const unsigned char* input_data, size_t input_size, unsigned char* output_data, size_t output_buffer_size) {
@@ -97,6 +127,7 @@ size_t ZlibCompress(int level, int window, const unsigned char* input_data, size
   deflateEnd(&strm);
   return output_size;
 }
+
 
 typedef size_t (*CompressionFunc)(int, int, const unsigned char*, size_t, unsigned char*, size_t);
 
@@ -162,7 +193,7 @@ void BundledCompression(const unsigned char* input_data, size_t input_size,
       float rate = input_size / comp_results.compressed_size;
       float speed = (float) (input_size * repetitions) / (comp_results.compression_time * 1024 * 1024);
       results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
-      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << comp_results.compressed_size << ", \"";
+      results << name << level << "_compressed_size\":" << std::setprecision(4) << comp_results.compressed_size << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed << ",\n";
     }
 
@@ -174,7 +205,7 @@ void BundledCompression(const unsigned char* input_data, size_t input_size,
       float rate = input_size / comp_results.compressed_size;
       float speed = (float) (input_size * repetitions) / (comp_results.compression_time * 1024 * 1024);
       results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
-      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << comp_results.compressed_size << ", \"";
+      results << name << level << "_compressed_size\":" << std::setprecision(4) << comp_results.compressed_size << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed;
       if (level < 9) {
           results << ",\n";
@@ -217,6 +248,7 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
           compressed_sizes[level - 1] += comp_results.compressed_size;
           compression_times[level - 1] += comp_results.compression_time;
         }
+
         for (int level = 1 ; level <= 9 ; level ++) {
           CompressionStatistics comp_results = MeasureCompress(level, window, (unsigned char*)code.c_str(), chunk_size, 
                                                                 output_data, output_buffer_size, ZlibCompress, repetitions);
@@ -232,7 +264,7 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
       float rate = input_size / compressed_sizes[level - 1];
       float speed = (float) (input_size * repetitions) / (compression_times[level - 1] * 1024 * 1024);
       results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
-      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << compressed_sizes[level - 1] << ", \"";
+      results << name << level << "_compressed_size\":" << std::setprecision(4) << compressed_sizes[level - 1] << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed << ",\n";
     }
 
@@ -241,7 +273,7 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
       float rate = input_size / compressed_sizes[11 + level - 1];
       float speed = (float) (input_size * repetitions) / (compression_times[11 + level - 1] * 1024 * 1024);
       results << "\"" << name << level << "_compression_rate\":" << std::setprecision(4) << rate << ", \"";
-      results << "\"" << name << level << "_compressed_size\":" << std::setprecision(4) << compressed_sizes[11 + level - 1] << ", \"";
+      results << name << level << "_compressed_size\":" << std::setprecision(4) << compressed_sizes[11 + level - 1] << ", \"";
       results << name << level << "_speed\":" << std::setprecision(4) << speed;
       if (level < 9) {
           results << ",\n";
