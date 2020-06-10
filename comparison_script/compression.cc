@@ -235,6 +235,7 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
     std::vector<float> compressed_sizes(11 + 9, 0);
     std::vector<float> compression_times(11 + 9, 0);
     int overall_size = 0;
+    results << "\"chunks_count\":" << chunks.size() << ",\n";
     for (const auto& chunk : chunks) {
         code = chunk["code"];
         int chunk_size = code.size();
