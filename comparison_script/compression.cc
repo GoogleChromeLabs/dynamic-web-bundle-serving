@@ -147,7 +147,7 @@ size_t ZlibDecompress(const unsigned char* input_data, size_t input_size, unsign
   strm.next_in = (unsigned char*) input_data;
   strm.avail_out = output_buffer_size;
   strm.next_out = output_data;
-  //
+  
   if (Z_OK != inflateInit2(&strm, 15 + 16)) {
     std::cout << "Failure in inflateInit";
     throw "Failure in inflateInit";
@@ -156,10 +156,7 @@ size_t ZlibDecompress(const unsigned char* input_data, size_t input_size, unsign
     std::cout << "Failure in inflate";
     throw "Failure in inflate";
   }
-  // if (0 != strm.avail_in) {
-  //   std::cout << "Failure in consume " << strm.avail_in;
-  //   throw "Failed to consume entire input in deflate";
-  // }
+
   size_t output_size = output_buffer_size - strm.avail_out;
   inflateEnd(&strm);
   return output_size;
@@ -272,7 +269,7 @@ void UnbundledCompression(const unsigned char* input_data, size_t input_size,
                            unsigned char* output_data, size_t output_buffer_size,
                            std::ostream & results, int repetitions, std::string file_name) {
 
-    std::string command = "node --experimental-modules bundle_analyzer/get_chunks.js " + file_name +
+    std::string command = "node --experimental-modules third_party/bundle_analyzer/get_chunks.js " + file_name +
         " parsed_bundle.json 2>&1";
     bool execution_result = Execute(command.c_str());
     if (!execution_result) {
